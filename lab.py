@@ -20,7 +20,10 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENAI_API_KEY")
+)
 
 # ---------------------------------------------------------------------------
 # Sample corpus — feel free to swap in your own sentences
@@ -61,7 +64,8 @@ def get_embeddings(texts: list[str], model: str = DEFAULT_EMBEDDING_MODEL) -> li
     attribute is a list of objects, each with an `.embedding` field.
     """
     # TODO: Call the API and return the embeddings.
-    raise NotImplementedError
+    response = client.embeddings.create(input=texts, model=model)
+    return [obj.embedding for obj in response.data]
 
 
 # ---------------------------------------------------------------------------
@@ -83,7 +87,7 @@ def mean_pool(embeddings: list[list[float]]) -> np.ndarray:
     text), mean-pooling collapses them into one representation.
     """
     # TODO: Compute and return the mean-pooled vector.
-    raise NotImplementedError
+    return np.mean(embeddings, axis=0)
 
 
 # ---------------------------------------------------------------------------
@@ -107,7 +111,14 @@ def cosine_similarity(vec_a: np.ndarray, vec_b: np.ndarray) -> float:
     (dot product, norm, etc.).
     """
     # TODO: Implement cosine similarity from scratch.
-    raise NotImplementedError
+    dot_product = np.dot(vec_a, vec_b)
+    norm_a = np.linalg.norm(vec_a)
+    norm_b = np.linalg.norm(vec_b)
+    
+    if norm_a == 0.0 or norm_b == 0.0:
+        return 0.0
+        
+    return float(dot_product / (norm_a * norm_b))
 
 
 # ---------------------------------------------------------------------------
@@ -136,7 +147,13 @@ def top_k_similar(
     Hint: Use your cosine_similarity function from Part 3.
     """
     # TODO: Compute similarities and return the top-k results.
-    raise NotImplementedError
+    results = []
+    for text, vec in zip(corpus_texts, corpus_vecs):
+        score = cosine_similarity(query_vec, vec)
+        results.append((text, score))
+        
+    results.sort(key=lambda x: x[1], reverse=True)
+    return results[:k]
 
 
 # ---------------------------------------------------------------------------
